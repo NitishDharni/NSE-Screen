@@ -15,6 +15,12 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import threading, time, logging
+from curl_cffi import requests as cffi_requests
+
+# Shared session that impersonates a real browser's TLS fingerprint —
+# bypasses Yahoo Finance's Cloudflare bot challenge that returns empty
+# responses to plain requests from cloud/datacenter IPs.
+YF_SESSION = cffi_requests.Session(impersonate="chrome")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger(__name__)
@@ -943,7 +949,7 @@ def fetch_batch(symbols, period, interval):
         data = yf.download(
             yf_syms, period=period, interval=interval,
             group_by="ticker", auto_adjust=True,
-            threads=True, progress=False
+            threads=True, progress=False, session=YF_SESSION
         )
     except Exception as e:
         log.warning(f"Batch download failed ({period}/{interval}): {e}")
@@ -977,7 +983,7 @@ def fetch_batch(symbols, period, interval):
 # ══════════════════════════════════════════════
 def fetch_nifty_ret():
     try:
-        df = yf.Ticker("^NSEI").history(period="3mo",interval="1d",auto_adjust=True)
+        df = yf.Ticker("^NSEI", session=YF_SESSION).history(period="3mo",interval="1d",auto_adjust=True)
         if df is not None and len(df)>=21:
             df=df.sort_index(ascending=True); c=df["Close"]
             return {"1m":(c.iloc[-1]-c.iloc[-21])/c.iloc[-21]*100,
@@ -1101,7 +1107,7 @@ def fetch_indices():
     data=[]
     for sym,label in INDICES_LIST:
         try:
-            df=yf.Ticker(sym).history(period="5d",interval="1d",auto_adjust=True)
+            df=yf.Ticker(sym, session=YF_SESSION).history(period="5d",interval="1d",auto_adjust=True)
             if df is not None and len(df)>=2:
                 df=df.sort_index(ascending=False)
                 p=float(df["Close"].iloc[0]); pv=float(df["Close"].iloc[1])
