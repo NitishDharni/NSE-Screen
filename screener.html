@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nifty 500 Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e14;--sur:#111722;--sur2:#1a2233;--brd:#1e2d45;--brd2:#2a3f5f;--txt:#e2eaf8;--txt2:#7a9bc4;--txt3:#4a6080;--acc:#00c4ff;--grn:#00e676;--grn2:#004d2a;--red:#ff4444;--red2:#4d0a0a;--amb:#ffb300;--amb2:#4d3300;--pur:#a29bfe;--fn:'IBM Plex Sans',sans-serif;--mo:'IBM Plex Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:var(--fn);font-size:14px;min-height:100vh;}
+
+header{background:var(--sur);border-bottom:1px solid var(--brd);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;gap:10px;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.logo-mark{width:30px;height:30px;background:linear-gradient(135deg,#00c4ff,#0070cc);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--mo);font-weight:700;font-size:10px;color:#000;}
+.logo-text{font-family:var(--mo);font-size:13px;font-weight:500;letter-spacing:.04em;}
+.logo-sub{font-size:10px;color:var(--txt3);font-family:var(--mo);}
+.hdr-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:transparent;border:1px solid var(--brd2);border-radius:5px;color:var(--txt2);font-family:var(--fn);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#000;font-weight:600;}
+.btn.pri:hover{opacity:.85;}
+.spill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:11px;font-family:var(--mo);font-weight:500;border:1px solid;}
+.spill.live{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:var(--grn);}
+.spill.scan{background:rgba(255,179,0,.08);border-color:rgba(255,179,0,.25);color:var(--amb);}
+.spill.off{background:rgba(100,100,100,.1);border-color:rgba(100,100,100,.2);color:var(--txt3);}
+.spill.err{background:rgba(255,68,68,.08);border-color:rgba(255,68,68,.25);color:var(--red);}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.blink{animation:pulse 1.2s infinite;}
+.rr-sel{background:var(--sur2);border:1px solid var(--brd2);border-radius:5px;padding:5px 8px;color:var(--txt);font-family:var(--mo);font-size:12px;outline:none;cursor:pointer;}
+.rr-sel:focus{border-color:var(--acc);}
+
+.ticker{background:var(--sur2);border-bottom:1px solid var(--brd);padding:0 20px;height:34px;display:flex;align-items:center;gap:24px;overflow:hidden;}
+.ti{display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.tl{font-size:10px;color:var(--txt3);font-family:var(--mo);}
+.tv{font-size:13px;font-family:var(--mo);font-weight:600;}
+.tc{font-size:11px;font-family:var(--mo);}
+.up{color:var(--grn);}.dn{color:var(--red);}.neu{color:var(--txt2);}
+.tr-r{margin-left:auto;font-size:10px;color:var(--txt3);font-family:var(--mo);}
+
+.sbar{background:var(--sur);border-bottom:1px solid var(--brd);padding:7px 20px;display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--txt3);}
+.sdot.live{background:var(--grn);box-shadow:0 0 6px var(--grn);animation:pulse 2s infinite;}
+.sdot.scan{background:var(--amb);animation:pulse 1s infinite;}
+.sdot.err{background:var(--red);}
+.stxt{font-size:12px;color:var(--txt2);font-family:var(--mo);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mpill{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mo);}
+.mpill.open{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.2);color:var(--grn);}
+.mpill.closed{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);color:var(--red);}
+
+.pbar{background:var(--sur);border-bottom:1px solid var(--brd);padding:8px 20px;display:none;}
+.prow{display:flex;justify-content:space-between;margin-bottom:5px;}
+.plbl{font-size:11px;font-family:var(--mo);color:var(--txt2);}
+.ppct{font-size:11px;font-family:var(--mo);color:var(--acc);}
+.ptrk{height:3px;background:var(--brd);border-radius:2px;overflow:hidden;}
+.pfil{height:100%;background:var(--acc);border-radius:2px;transition:width .4s;}
+.psub{font-size:10px;font-family:var(--mo);color:var(--txt3);margin-top:4px;}
+
+.cdbar{background:var(--sur2);border-bottom:1px solid var(--brd);padding:5px 20px;display:none;align-items:center;gap:10px;}
+.cdlbl{font-size:10px;font-family:var(--mo);color:var(--txt3);}
+.cdtrk{flex:1;max-width:200px;height:2px;background:var(--brd);border-radius:2px;overflow:hidden;}
+.cdfil{height:100%;background:var(--acc);border-radius:2px;transition:width 1s linear;}
+.cdnum{font-size:11px;font-family:var(--mo);color:var(--acc);min-width:32px;}
+
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:1px;background:var(--brd);border-bottom:1px solid var(--brd);}
+.sc{background:var(--sur);padding:10px 14px;}
+.sl{font-size:10px;color:var(--txt3);font-family:var(--mo);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px;}
+.sv{font-family:var(--mo);font-size:20px;font-weight:600;}
+.ac{color:var(--acc);}.sup{color:var(--grn);}.sdn{color:var(--red);}.sne{color:var(--txt2);}
+
+.tab-bar{background:var(--sur);border-bottom:1px solid var(--brd);padding:0 20px;display:flex;}
+.tab{padding:10px 20px;font-family:var(--mo);font-size:12px;font-weight:500;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--txt2);}
+.tab.act{color:var(--acc);border-bottom-color:var(--acc);}
+.tab.act.brk{color:var(--pur);border-bottom-color:var(--pur);}
+.tab.dbl{color:var(--txt3);}
+.tab.act.dbl{color:#f59e0b;border-bottom-color:#f59e0b;}
+.tab.act.dbl .tab-cnt{background:#f59e0b;color:#000;}
+.dbl-breakout{color:#10b981;font-weight:600;}
+.dbl-approach{color:#f59e0b;font-weight:600;}
+.tab.bof{color:var(--txt3);}
+.tab.act.bof{color:#06b6d4;border-bottom-color:#06b6d4;}
+.tab.act.bof .tab-cnt{background:#06b6d4;color:#000;}
+.bof-bull{color:#10b981;font-weight:600;}
+.bof-bear{color:#ef4444;font-weight:600;}
+.tab-cnt{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:6px;background:var(--sur2);color:var(--txt3);}
+.tab.act .tab-cnt{background:var(--acc);color:#000;}
+.tab.act.brk .tab-cnt{background:var(--pur);color:#000;}
+
+.ctrl{background:var(--sur);border-bottom:1px solid var(--brd);padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.csep{width:1px;height:18px;background:var(--brd);flex-shrink:0;}
+.cg{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.cl{font-size:10px;color:var(--txt3);font-family:var(--mo);white-space:nowrap;}
+.fb{padding:3px 8px;border:1px solid var(--brd2);border-radius:4px;background:transparent;color:var(--txt2);font-size:11px;font-family:var(--mo);cursor:pointer;transition:all .12s;}
+.fb:hover{border-color:var(--acc);color:var(--acc);}
+.fb.act{background:var(--acc);border-color:var(--acc);color:#000;font-weight:600;}
+.fb.aup{background:var(--grn)!important;border-color:var(--grn)!important;color:#000!important;}
+.fb.adn{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important;}
+.sbox{background:var(--sur2);border:1px solid var(--brd2);border-radius:5px;padding:4px 10px;color:var(--txt);font-family:var(--mo);font-size:12px;outline:none;width:130px;}
+.sbox:focus{border-color:var(--acc);}
+.sbox::placeholder{color:var(--txt3);}
+
+.tw{overflow-x:auto;padding:0 20px 24px;}
+table{width:100%;border-collapse:collapse;margin-top:14px;}
+thead th{font-family:var(--mo);font-size:10px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:7px 8px;border-bottom:1px solid var(--brd);white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--txt2);background:var(--sur2);}
+thead th.sorted{color:var(--acc);}
+thead th.sorted::after{content:' ↓';font-size:9px;color:var(--acc);}
+thead th.sorted.asc::after{content:' ↑';}
+tbody tr{border-bottom:1px solid var(--brd);transition:background .1s;}
+tbody tr:hover{background:var(--sur2);}
+tbody td{padding:8px 8px;font-family:var(--mo);font-size:12px;white-space:nowrap;}
+.sym{font-weight:600;color:var(--acc);}
+.spill2{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;background:var(--sur2);border:1px solid var(--brd2);color:var(--txt3);}
+.slong{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--grn2);border:1px solid var(--grn);color:var(--grn);}
+.sshort{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--red2);border:1px solid var(--red);color:var(--red);}
+.swatch{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--amb2);border:1px solid var(--amb);color:var(--amb);}
+.sbull{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--grn2);border:1px solid var(--grn);color:var(--grn);}
+.sbear{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--red2);border:1px solid var(--red);color:var(--red);}
+.sneut{display:inline-flex;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;background:var(--sur2);border:1px solid var(--brd2);color:var(--txt3);}
+.cbar{display:flex;align-items:center;gap:6px;}
+.ctrk{width:52px;height:3px;background:var(--brd);border-radius:2px;overflow:hidden;}
+.cfil{height:100%;border-radius:2px;}
+.ch{background:var(--grn);}.cm{background:var(--amb);}.ccl{background:var(--red);}.cp{background:var(--pur);}
+.scrtrk{width:60px;height:5px;background:var(--brd);border-radius:3px;overflow:hidden;}
+.scrfil{height:100%;border-radius:3px;}
+.conds{display:flex;gap:3px;flex-wrap:wrap;}
+.cond{padding:1px 5px;border-radius:2px;font-size:9px;background:var(--sur2);border:1px solid var(--brd2);color:var(--txt3);}
+.cond.met{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:var(--grn);}
+.cond.bear{background:rgba(255,68,68,.1);border-color:rgba(255,68,68,.3);color:var(--red);}
+.ind-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;font-family:var(--mo);}
+.ind-bull{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);color:var(--grn);}
+.ind-bear{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--red);}
+.rec-text{font-size:11px;color:var(--txt2);max-width:260px;white-space:normal;line-height:1.4;}
+
+.offline{background:var(--red2);border:1px solid var(--red);border-radius:6px;padding:16px 20px;margin:20px;display:none;}
+.offline h3{font-family:var(--mo);font-size:13px;color:var(--red);margin-bottom:8px;}
+.offline p{font-size:12px;color:var(--txt2);line-height:1.7;font-family:var(--mo);}
+.offline code{color:var(--acc);}
+.empty{text-align:center;padding:50px 20px;color:var(--txt3);}
+.empty p{font-family:var(--mo);font-size:12px;line-height:1.9;}
+footer{padding:10px 20px;border-top:1px solid var(--brd);font-size:10px;color:var(--txt3);font-family:var(--mo);line-height:1.8;}
+@media(max-width:700px){header{padding:0 10px;}.logo-text{display:none;}.tw{padding:0 10px 16px;}.sv{font-size:15px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">N500</div>
+    <div>
+      <div class="logo-text">Nifty 500 Screener</div>
+      <div class="logo-sub">Flask + yfinance · CPR · Breakout · All Indicators</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="spill off" id="sPill"><span class="dot" id="sDot"></span><span id="sLbl">Connecting…</span></div>
+    <label style="font-size:11px;color:var(--txt3);font-family:var(--mo)">R:R</label>
+    <select class="rr-sel" id="rrSel">
+      <option value="2">2 : 1</option>
+      <option value="2.5">2.5 : 1</option>
+      <option value="3" selected>3 : 1</option>
+      <option value="4">4 : 1</option>
+    </select>
+    <button class="btn pri" id="btnScan" onclick="startScan()">▶ Start Scan</button>
+    <button class="btn" id="btnRefresh" onclick="manualRefresh()" style="display:none">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="ticker">
+  <div class="ti"><span class="tl">NIFTY 50</span><span class="tv" id="tN">—</span><span class="tc neu" id="tNc">—</span></div>
+  <div class="ti"><span class="tl">BANKNIFTY</span><span class="tv" id="tB">—</span><span class="tc neu" id="tBc">—</span></div>
+  <div class="ti"><span class="tl">NIFTY IT</span><span class="tv" id="tIT">—</span><span class="tc neu" id="tITc">—</span></div>
+  <div class="ti"><span class="tl">MIDCAP 50</span><span class="tv" id="tM">—</span><span class="tc neu" id="tMc">—</span></div>
+  <div class="ti"><span class="tl">SMALLCAP 100</span><span class="tv" id="tSC">—</span><span class="tc neu" id="tSCc">—</span></div>
+  <div class="tr-r" id="lastRef">Last refresh: —</div>
+</div>
+
+<div class="sbar">
+  <span class="sdot" id="sdot"></span>
+  <span class="stxt" id="stxt">Checking backend…</span>
+  <span class="mpill closed" id="mpill">● CLOSED</span>
+</div>
+
+<div class="offline" id="offlineBanner">
+  <h3>⚠ Backend not running</h3>
+  <p>Start it in terminal:<br><br>
+  <code>pip install flask yfinance flask-cors pandas numpy</code><br>
+  <code>python app.py</code><br><br>
+  Then refresh this page.</p>
+</div>
+
+<div class="pbar" id="pbar">
+  <div class="prow"><span class="plbl" id="plbl">Scanning…</span><span class="ppct" id="ppct">0%</span></div>
+  <div class="ptrk"><div class="pfil" id="pfil" style="width:0%"></div></div>
+  <div class="psub" id="psub"></div>
+</div>
+
+<div class="cdbar" id="cdBar">
+  <span class="cdlbl">Next refresh in</span>
+  <div class="cdtrk"><div class="cdfil" id="cdFil" style="width:100%"></div></div>
+  <span class="cdnum" id="cdNum">60s</span>
+</div>
+
+<div class="sgrid">
+  <div class="sc"><div class="sl">Scanned</div><div class="sv ac" id="stScanned">—</div></div>
+  <div class="sc"><div class="sl">▲ Long</div><div class="sv sup" id="stLong">—</div></div>
+  <div class="sc"><div class="sl">▼ Short</div><div class="sv sdn" id="stShort">—</div></div>
+  <div class="sc"><div class="sl">◆ Watch</div><div class="sv sne" id="stWatch">—</div></div>
+  <div class="sc"><div class="sl">&gt;15% Upside</div><div class="sv sup" id="stUp">—</div></div>
+  <div class="sc"><div class="sl">Conf &gt;70%</div><div class="sv ac" id="stConf">—</div></div>
+  <div class="sc"><div class="sl">🟢 Breakouts</div><div class="sv" style="color:var(--pur)" id="stBull">—</div></div>
+  <div class="sc"><div class="sl">🔴 Breakdowns</div><div class="sv sdn" id="stBear">—</div></div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab act" id="tabCpr" onclick="switchTab('cpr')">
+    📊 CPR Scanner <span class="tab-cnt" id="cprCnt">0</span>
+  </div>
+  <div class="tab brk" id="tabBrk" onclick="switchTab('brk')">
+    ⚡ Breakout Scanner <span class="tab-cnt" id="brkCnt">0</span>
+  </div>
+  <div class="tab dbl" id="tabDbl" onclick="switchTab('dbl')">
+    🔁 Double Bottom <span class="tab-cnt" id="dblCnt">0</span>
+  </div>
+  <div class="tab bof" id="tabBof" onclick="switchTab('bof')">
+    🎯 Breakout Finder <span class="tab-cnt" id="bofCnt">0</span>
+  </div>
+</div>
+
+<!-- CPR Controls -->
+<div class="ctrl" id="ctrlCpr">
+  <input class="sbox" id="srchCpr" placeholder="Search symbol…" oninput="renderCpr()">
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Signal:</span>
+    <button class="fb act" data-f="cd" data-v="all"   onclick="setCF('cd','all',this)">All</button>
+    <button class="fb"     data-f="cd" data-v="long"  onclick="setCF('cd','long',this)">▲ Long</button>
+    <button class="fb"     data-f="cd" data-v="short" onclick="setCF('cd','short',this)">▼ Short</button>
+    <button class="fb"     data-f="cd" data-v="watch" onclick="setCF('cd','watch',this)">◆ Watch</button>
+  </div>
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Quality:</span>
+    <button class="fb act" data-f="cq" data-v="all"  onclick="setCF('cq','all',this)">All</button>
+    <button class="fb"     data-f="cq" data-v="u15"  onclick="setCF('cq','u15',this)">&gt;15% Upside</button>
+    <button class="fb"     data-f="cq" data-v="u20"  onclick="setCF('cq','u20',this)">&gt;20% Upside</button>
+    <button class="fb"     data-f="cq" data-v="c70"  onclick="setCF('cq','c70',this)">Conf &gt;70%</button>
+    <button class="fb"     data-f="cq" data-v="best" onclick="setCF('cq','best',this)">★ Best</button>
+  </div>
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Sector:</span>
+    <button class="fb act" data-f="cs" data-v="all"       onclick="setCF('cs','all',this)">All</button>
+    <button class="fb"     data-f="cs" data-v="Banking"   onclick="setCF('cs','Banking',this)">Banking</button>
+    <button class="fb"     data-f="cs" data-v="IT"        onclick="setCF('cs','IT',this)">IT</button>
+    <button class="fb"     data-f="cs" data-v="Auto"      onclick="setCF('cs','Auto',this)">Auto</button>
+    <button class="fb"     data-f="cs" data-v="Pharma"    onclick="setCF('cs','Pharma',this)">Pharma</button>
+    <button class="fb"     data-f="cs" data-v="FMCG"      onclick="setCF('cs','FMCG',this)">FMCG</button>
+    <button class="fb"     data-f="cs" data-v="Oil & Gas" onclick="setCF('cs','Oil & Gas',this)">Oil &amp; Gas</button>
+    <button class="fb"     data-f="cs" data-v="Metals"    onclick="setCF('cs','Metals',this)">Metals</button>
+    <button class="fb"     data-f="cs" data-v="Infra"     onclick="setCF('cs','Infra',this)">Infra</button>
+    <button class="fb"     data-f="cs" data-v="NBFC"      onclick="setCF('cs','NBFC',this)">NBFC</button>
+    <button class="fb"     data-f="cs" data-v="Realty"    onclick="setCF('cs','Realty',this)">Realty</button>
+    <button class="fb"     data-f="cs" data-v="Chemicals" onclick="setCF('cs','Chemicals',this)">Chemicals</button>
+    <button class="fb"     data-f="cs" data-v="Consumer"  onclick="setCF('cs','Consumer',this)">Consumer</button>
+    <button class="fb"     data-f="cs" data-v="Power"     onclick="setCF('cs','Power',this)">Power</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Banking"   onclick="setCF('cs','Smallcap-Banking',this)">SC Banking</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-IT"        onclick="setCF('cs','Smallcap-IT',this)">SC IT</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Pharma"    onclick="setCF('cs','Smallcap-Pharma',this)">SC Pharma</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Chemicals" onclick="setCF('cs','Smallcap-Chemicals',this)">SC Chemicals</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Auto"      onclick="setCF('cs','Smallcap-Auto',this)">SC Auto</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Consumer"  onclick="setCF('cs','Smallcap-Consumer',this)">SC Consumer</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Infra"     onclick="setCF('cs','Smallcap-Infra',this)">SC Infra</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Metals"    onclick="setCF('cs','Smallcap-Metals',this)">SC Metals</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Realty"    onclick="setCF('cs','Smallcap-Realty',this)">SC Realty</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Power"     onclick="setCF('cs','Smallcap-Power',this)">SC Power</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-Textiles"  onclick="setCF('cs','Smallcap-Textiles',this)">SC Textiles</button>
+    <button class="fb"     data-f="cs" data-v="Smallcap-FMCG"      onclick="setCF('cs','Smallcap-FMCG',this)">SC FMCG</button>
+    <button class="fb"     data-f="cs" data-v="TotalMkt-Other"     onclick="setCF('cs','TotalMkt-Other',this)">Other (Total Mkt)</button>
+  </div>
+</div>
+
+<!-- Breakout Controls -->
+<div class="ctrl" id="ctrlBrk" style="display:none">
+  <input class="sbox" id="srchBrk" placeholder="Search symbol…" oninput="renderBrk()">
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Direction:</span>
+    <button class="fb act" data-f="bd" data-v="all"     onclick="setBF('bd','all',this)">All</button>
+    <button class="fb"     data-f="bd" data-v="bullish" onclick="setBF('bd','bullish',this)">🟢 Bullish</button>
+    <button class="fb"     data-f="bd" data-v="bearish" onclick="setBF('bd','bearish',this)">🔴 Bearish</button>
+    <button class="fb"     data-f="bd" data-v="neutral" onclick="setBF('bd','neutral',this)">⚪ Neutral</button>
+  </div>
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Score:</span>
+    <button class="fb act" data-f="bs" data-v="all" onclick="setBF('bs','all',this)">All</button>
+    <button class="fb"     data-f="bs" data-v="s40" onclick="setBF('bs','s40',this)">Score &gt;40</button>
+    <button class="fb"     data-f="bs" data-v="s60" onclick="setBF('bs','s60',this)">Score &gt;60</button>
+    <button class="fb"     data-f="bs" data-v="s80" onclick="setBF('bs','s80',this)">Score &gt;80</button>
+  </div>
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Trigger:</span>
+    <button class="fb act" data-f="bt" data-v="all"       onclick="setBF('bt','all',this)">All</button>
+    <button class="fb"     data-f="bt" data-v="emaCross"  onclick="setBF('bt','emaCross',this)">EMA Cross</button>
+    <button class="fb"     data-f="bt" data-v="bbBreak"   onclick="setBF('bt','bbBreak',this)">BB Breakout</button>
+    <button class="fb"     data-f="bt" data-v="macdCross" onclick="setBF('bt','macdCross',this)">MACD Cross</button>
+    <button class="fb"     data-f="bt" data-v="stFlip"    onclick="setBF('bt','stFlip',this)">ST Flip</button>
+    <button class="fb"     data-f="bt" data-v="52wk"      onclick="setBF('bt','52wk',this)">52-Wk High</button>
+  </div>
+  <div class="csep"></div>
+  <div class="cg">
+    <span class="cl">Sector:</span>
+    <button class="fb act" data-f="bsec" data-v="all"     onclick="setBF('bsec','all',this)">All</button>
+    <button class="fb"     data-f="bsec" data-v="Banking" onclick="setBF('bsec','Banking',this)">Banking</button>
+    <button class="fb"     data-f="bsec" data-v="IT"      onclick="setBF('bsec','IT',this)">IT</button>
+    <button class="fb"     data-f="bsec" data-v="Auto"    onclick="setBF('bsec','Auto',this)">Auto</button>
+    <button class="fb"     data-f="bsec" data-v="Pharma"  onclick="setBF('bsec','Pharma',this)">Pharma</button>
+    <button class="fb"     data-f="bsec" data-v="Infra"   onclick="setBF('bsec','Infra',this)">Infra</button>
+    <button class="fb"     data-f="bsec" data-v="NBFC"    onclick="setBF('bsec','NBFC',this)">NBFC</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Banking"   onclick="setBF('bsec','Smallcap-Banking',this)">SC Banking</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-IT"        onclick="setBF('bsec','Smallcap-IT',this)">SC IT</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Pharma"    onclick="setBF('bsec','Smallcap-Pharma',this)">SC Pharma</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Chemicals" onclick="setBF('bsec','Smallcap-Chemicals',this)">SC Chemicals</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Auto"      onclick="setBF('bsec','Smallcap-Auto',this)">SC Auto</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Consumer"  onclick="setBF('bsec','Smallcap-Consumer',this)">SC Consumer</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Infra"     onclick="setBF('bsec','Smallcap-Infra',this)">SC Infra</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Metals"    onclick="setBF('bsec','Smallcap-Metals',this)">SC Metals</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Realty"    onclick="setBF('bsec','Smallcap-Realty',this)">SC Realty</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Power"     onclick="setBF('bsec','Smallcap-Power',this)">SC Power</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-Textiles"  onclick="setBF('bsec','Smallcap-Textiles',this)">SC Textiles</button>
+    <button class="fb"     data-f="bsec" data-v="Smallcap-FMCG"      onclick="setBF('bsec','Smallcap-FMCG',this)">SC FMCG</button>
+    <button class="fb"     data-f="bsec" data-v="TotalMkt-Other"     onclick="setBF('bsec','TotalMkt-Other',this)">Other (Total Mkt)</button>
+  </div>
+</div>
+
+<!-- CPR Table -->
+<div class="tw" id="twCpr">
+  <table id="tblCpr">
+    <thead><tr>
+      <th data-col="symbol"     onclick="srtC('symbol',event)">Symbol</th>
+      <th>Sector</th>
+      <th data-col="signal"     onclick="srtC('signal',event)">Signal</th>
+      <th data-col="cmp"        onclick="srtC('cmp',event)" class="sorted">CMP ₹</th>
+      <th data-col="dayChg"     onclick="srtC('dayChg',event)">Day%</th>
+      <th>Day OHLC</th>
+      <th>CPR (Prev Day)</th>
+      <th data-col="target"     onclick="srtC('target',event)">Target ₹</th>
+      <th data-col="sl"         onclick="srtC('sl',event)">SL ₹</th>
+      <th data-col="upside"     onclick="srtC('upside',event)">Upside</th>
+      <th data-col="rr"         onclick="srtC('rr',event)">R:R</th>
+      <th data-col="qty"        onclick="srtC('qty',event)">Qty</th>
+      <th data-col="volSurge"   onclick="srtC('volSurge',event)">Vol↑</th>
+      <th data-col="rsi"        onclick="srtC('rsi',event)">RSI</th>
+      <th data-col="macdHist"   onclick="srtC('macdHist',event)">MACD</th>
+      <th data-col="adx"        onclick="srtC('adx',event)">ADX</th>
+      <th data-col="pct52wk"    onclick="srtC('pct52wk',event)">52Wk%</th>
+      <th data-col="rsNifty"    onclick="srtC('rsNifty',event)">RS</th>
+      <th>ST</th>
+      <th>Conditions</th>
+      <th data-col="confidence" onclick="srtC('confidence',event)">Conf</th>
+    </tr></thead>
+    <tbody id="tbCpr">
+      <tr><td colspan="21"><div class="empty"><p>Start <strong style="color:var(--acc)">python app.py</strong> then click <strong style="color:var(--acc)">▶ Start Scan</strong><br>Stocks will appear progressively as they are scanned.</p></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Breakout Table -->
+<div class="tw" id="twBrk" style="display:none">
+  <table id="tblBrk">
+    <thead><tr>
+      <th data-col="symbol"    onclick="srtB('symbol',event)">Symbol</th>
+      <th>Sector</th>
+      <th data-col="direction" onclick="srtB('direction',event)">Direction</th>
+      <th data-col="score"     onclick="srtB('score',event)" class="sorted">Score</th>
+      <th>Recommendation</th>
+      <th data-col="cmp"       onclick="srtB('cmp',event)">CMP ₹</th>
+      <th data-col="dayChg"    onclick="srtB('dayChg',event)">Day%</th>
+      <th data-col="target"    onclick="srtB('target',event)">Target ₹</th>
+      <th data-col="sl"        onclick="srtB('sl',event)">SL ₹</th>
+      <th data-col="upside"    onclick="srtB('upside',event)">Upside</th>
+      <th data-col="rr"        onclick="srtB('rr',event)">R:R</th>
+      <th data-col="qty"       onclick="srtB('qty',event)">Qty</th>
+      <th data-col="rsi"       onclick="srtB('rsi',event)">RSI</th>
+      <th data-col="macdHist"  onclick="srtB('macdHist',event)">MACD</th>
+      <th data-col="adx"       onclick="srtB('adx',event)">ADX</th>
+      <th data-col="bbBW"      onclick="srtB('bbBW',event)">BB BW%</th>
+      <th data-col="volSurge"  onclick="srtB('volSurge',event)">Vol↑</th>
+      <th data-col="pct52wk"   onclick="srtB('pct52wk',event)">52Wk%</th>
+      <th data-col="rsNifty"   onclick="srtB('rsNifty',event)">RS</th>
+      <th>Triggers</th>
+    </tr></thead>
+    <tbody id="tbBrk">
+      <tr><td colspan="20"><div class="empty"><p>Breakout signals will appear here after scan.</p></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Double Bottom Filter Controls -->
+<div class="ctrl" id="ctrlDbl" style="display:none">
+  <input class="sbox" id="srchDbl" placeholder="Search symbol…" oninput="renderDbl()">
+  <div class="csep"></div>
+  <div class="cg">
+    <button class="fb act" data-f="dstatus" data-v="" onclick="setDF('dstatus','',this)">All</button>
+    <button class="fb"     data-f="dstatus" data-v="Breakout"           onclick="setDF('dstatus','Breakout',this)">Breakout</button>
+    <button class="fb"     data-f="dstatus" data-v="Approaching Neckline" onclick="setDF('dstatus','Approaching Neckline',this)">Approaching</button>
+  </div>
+</div>
+
+<!-- Double Bottom Table -->
+<div class="tw" id="twDbl" style="display:none">
+  <table id="tblDbl">
+    <thead><tr>
+      <th data-col="symbol"   onclick="srtD('symbol',event)">Symbol</th>
+      <th>Sector</th>
+      <th data-col="status"   onclick="srtD('status',event)">Status</th>
+      <th data-col="score"    onclick="srtD('score',event)" class="sorted">Score</th>
+      <th data-col="cmp"      onclick="srtD('cmp',event)">CMP ₹</th>
+      <th data-col="dayChg"   onclick="srtD('dayChg',event)">Day%</th>
+      <th data-col="neckline" onclick="srtD('neckline',event)">Neckline ₹</th>
+      <th data-col="neckPct"  onclick="srtD('neckPct',event)">Neck%</th>
+      <th data-col="trough1"  onclick="srtD('trough1',event)">Trough 1 ₹</th>
+      <th data-col="trough2"  onclick="srtD('trough2',event)">Trough 2 ₹</th>
+      <th data-col="depthPct" onclick="srtD('depthPct',event)">Depth%</th>
+      <th data-col="gapWeeks" onclick="srtD('gapWeeks',event)">Gap Wks</th>
+      <th data-col="target"   onclick="srtD('target',event)">Target ₹</th>
+      <th data-col="sl"       onclick="srtD('sl',event)">SL ₹</th>
+      <th data-col="upside"   onclick="srtD('upside',event)">Upside%</th>
+      <th data-col="volRatio" onclick="srtD('volRatio',event)">Vol Ratio</th>
+      <th data-col="rsiWeekly" onclick="srtD('rsiWeekly',event)">RSI (W)</th>
+    </tr></thead>
+    <tbody id="tbDbl">
+      <tr><td colspan="17"><div class="empty"><p>Double Bottom patterns will appear here after scan.</p></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Breakout Finder Filter Controls -->
+<div class="ctrl" id="ctrlBof" style="display:none">
+  <input class="sbox" id="srchBof" placeholder="Search symbol…" oninput="renderBof()">
+  <div class="csep"></div>
+  <div class="cg">
+    <button class="fb act" data-f="bofdir" data-v="" onclick="setBOF('bofdir','',this)">All</button>
+    <button class="fb"     data-f="bofdir" data-v="Bullish Breakout" onclick="setBOF('bofdir','Bullish Breakout',this)">Bullish</button>
+    <button class="fb"     data-f="bofdir" data-v="Bearish Breakdown" onclick="setBOF('bofdir','Bearish Breakdown',this)">Bearish</button>
+  </div>
+</div>
+
+<!-- Breakout Finder Table -->
+<div class="tw" id="twBof" style="display:none">
+  <table id="tblBof">
+    <thead><tr>
+      <th data-col="symbol"    onclick="srtBO('symbol',event)">Symbol</th>
+      <th>Sector</th>
+      <th data-col="direction" onclick="srtBO('direction',event)">Direction</th>
+      <th data-col="cmp"       onclick="srtBO('cmp',event)" class="sorted">CMP ₹</th>
+      <th data-col="dayChg"    onclick="srtBO('dayChg',event)">Day%</th>
+      <th data-col="level"     onclick="srtBO('level',event)">Level ₹</th>
+      <th data-col="tests"     onclick="srtBO('tests',event)">Tests</th>
+      <th data-col="baseAge"   onclick="srtBO('baseAge',event)">Base Age (bars)</th>
+      <th data-col="zoneWidth" onclick="srtBO('zoneWidth',event)">Zone Width ₹</th>
+      <th data-col="target"    onclick="srtBO('target',event)">Target ₹</th>
+      <th data-col="sl"        onclick="srtBO('sl',event)">SL ₹</th>
+      <th data-col="upside"    onclick="srtBO('upside',event)">Upside%</th>
+    </tr></thead>
+    <tbody id="tbBof">
+      <tr><td colspan="12"><div class="empty"><p>Breakout Finder signals will appear here after scan.</p></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  Data: <strong style="color:var(--txt2)">yfinance</strong> (NSE .NS) · Flask localhost:5000 · 1yr daily OHLCV · CPR · EMA 20/50/200 · RSI-14 · MACD · Bollinger · ADX-14 · Supertrend(10,3) · ATR-14 · 52Wk · HH/HL · RS vs Nifty · Double Bottom (Weekly) · Breakout Finder (Pivot Zone) · Not SEBI investment advice
+</footer>
+
+<script>
+'use strict';
+const API='/api';
+let cprData=[], brkData=[], dblData=[], bofData=[];
+let cFilt={cd:'all',cq:'all',cs:'all'};
+let bFilt={bd:'all',bs:'all',bt:'all',bsec:'all'};
+let cSort={col:'cmp',asc:false}, bSort={col:'score',asc:false};
+let activeTab='cpr', backendOk=false;
+let statusTimer=null, cdTimer=null;
+
+window.onload=()=>{
+  clockTick(); setInterval(clockTick,1000);
+  checkBackend(); loadIndices();
+};
+
+const el=id=>document.getElementById(id);
+const istNow=()=>new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+const isOpen=()=>{const d=istNow(),m=d.getHours()*60+d.getMinutes(),w=d.getDay();return w>0&&w<6&&m>=555&&m<=930;};
+const fmt=n=>{if(n===undefined||n===null||isNaN(n))return'—';return(+n).toLocaleString('en-IN',{maximumFractionDigits:2,minimumFractionDigits:2});};
+
+function clockTick(){
+  const mp=el('mpill');
+  if(isOpen()){mp.textContent='● OPEN';mp.className='mpill open';}
+  else{mp.textContent='● CLOSED';mp.className='mpill closed';}
+}
+function setS(t,m){el('sdot').className='sdot '+t;el('stxt').textContent=m;}
+function setPill(s,l){
+  el('sPill').className='spill '+s;
+  el('sDot').className='dot'+(s==='scan'?' blink':'');
+  el('sLbl').textContent=l;
+}
+
+// ── Backend check ──
+async function checkBackend(){
+  try{
+    const r=await fetch(`${API}/status`,{signal:AbortSignal.timeout(3000)});
+    if(!r.ok)throw new Error();
+    const j=await r.json();
+    backendOk=true;
+    el('offlineBanner').style.display='none';
+    setPill('live','Backend connected');
+    setS('live','Ready · Select R:R and click ▶ Start Scan');
+    if(j.status==='scanning'){
+      el('pbar').style.display='block';
+      el('btnScan').disabled=true;
+      startPolling();
+    } else if(j.status==='done'){
+      loadResults();
+      el('btnRefresh').style.display='inline-flex';
+      el('cdBar').style.display='flex';
+      startCd();
+    }
+  }catch(e){
+    backendOk=false;
+    el('offlineBanner').style.display='block';
+    setPill('err','Backend offline');
+    setS('err','Backend not running — start with: python app.py');
+    setTimeout(checkBackend,5000);
+  }
+}
+
+// ── Start scan ──
+async function startScan(){
+  if(!backendOk){alert('Start the backend first: python app.py');return;}
+  const rr=parseFloat(el('rrSel').value);
+  try{
+    const r=await fetch(`${API}/scan`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rr_ratio:rr})});
+    if(r.status===409){setS('scan','Scan already running…');return;}
+    el('btnScan').disabled=true;
+    el('pbar').style.display='block';
+    setPill('scan','Scanning…');
+    setS('scan',`Started · R:R=${rr}:1 · Results appear progressively…`);
+    startPolling();
+  }catch(e){setS('err','Failed: '+e.message);}
+}
+
+// ── Poll status + load results progressively every 1.5s ──
+function startPolling(){
+  clearInterval(statusTimer);
+  statusTimer=setInterval(async()=>{
+    try{
+      // 1. Get status
+      const sr=await fetch(`${API}/status`);
+      const j=await sr.json();
+      el('pfil').style.width=j.progress+'%';
+      el('ppct').textContent=j.progress+'%';
+      el('plbl').textContent=j.message||'Scanning…';
+      el('psub').textContent=`✓ ${j.ok} loaded  ✗ ${j.failed} failed  ${j.done}/${j.total}`;
+
+      // 2. Always load & render results so table fills progressively
+      await loadResults();
+
+      // 3. On completion
+      if(j.status==='done'){
+        clearInterval(statusTimer);
+        el('pbar').style.display='none';
+        el('btnScan').disabled=false;
+        el('btnRefresh').style.display='inline-flex';
+        el('cdBar').style.display='flex';
+        setPill('live','Live · auto-refresh 60s');
+        setS('live',`Scan complete · ${j.ok} stocks · quotes refresh every 60s`);
+        loadIndices(); startCd();
+      } else if(j.status==='error'){
+        clearInterval(statusTimer);
+        el('pbar').style.display='none';
+        el('btnScan').disabled=false;
+        setPill('err','Error'); setS('err','Scan failed — check terminal');
+      }
+    }catch(e){}
+  },1500);
+}
+
+// ── Load results from backend ──
+async function loadResults(){
+  try{
+    const r=await fetch(`${API}/results`);
+    const j=await r.json();
+    // Support both old key (results) and new key (cpr)
+    const cprRaw = j.cpr || j.results || [];
+    const brkRaw = j.brk || [];
+    const dblRaw = j.dbl || [];
+    const bofRaw = j.bof || [];
+    if(Array.isArray(cprRaw) && cprRaw.length>0) cprData=cprRaw;
+    if(Array.isArray(brkRaw) && brkRaw.length>0) brkData=brkRaw;
+    if(Array.isArray(dblRaw) && dblRaw.length>0) dblData=dblRaw;
+    if(Array.isArray(bofRaw) && bofRaw.length>0) bofData=bofRaw;
+    renderCpr(); renderBrk(); renderDbl(); renderBof(); updateStats();
+    el('cprCnt').textContent=cprData.length;
+    el('brkCnt').textContent=brkData.filter(r=>r.direction!=='neutral').length;
+    el('dblCnt').textContent=dblData.length;
+    el('bofCnt').textContent=bofData.length;
+    if(j.last_quote){
+      const t=new Date(j.last_quote);
+      el('lastRef').textContent='Last: '+t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST';
+    }
+  }catch(e){}
+}
+
+// ── Manual refresh ──
+async function manualRefresh(){
+  const rr=parseFloat(el('rrSel').value);
+  setPill('scan','Refreshing…'); setS('scan','Refreshing quotes…'); stopCd();
+  try{
+    await fetch(`${API}/refresh`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rr_ratio:rr})});
+    setTimeout(async()=>{await loadResults();await loadIndices();setPill('live','Live');setS('live','Quotes refreshed');startCd();},5000);
+  }catch(e){}
+}
+
+// ── Indices ──
+async function loadIndices(){
+  try{
+    const r=await fetch(`${API}/indices`);
+    const j=await r.json();
+    const map={'NIFTY 50':['tN','tNc'],'BANKNIFTY':['tB','tBc'],'NIFTY IT':['tIT','tITc'],'MIDCAP 50':['tM','tMc'],'SMALLCAP 100':['tSC','tSCc']};
+    for(const idx of j){
+      const c=map[idx.label]; if(!c)continue;
+      el(c[0]).textContent=idx.price.toLocaleString('en-IN',{maximumFractionDigits:2});
+      el(c[1]).textContent=(idx.chg>=0?'+':'')+idx.chg.toFixed(2)+'%';
+      el(c[1]).className='tc '+(idx.chg>=0?'up':'dn');
+    }
+  }catch(e){}
+}
+
+// ── Countdown ──
+function startCd(){
+  stopCd(); let s=60;
+  el('cdFil').style.width='100%'; el('cdNum').textContent='60s';
+  cdTimer=setInterval(()=>{
+    s=Math.max(0,s-1);
+    el('cdFil').style.width=(s/60*100)+'%'; el('cdNum').textContent=s+'s';
+    if(s===0){stopCd();fetch(`${API}/refresh`,{method:'POST'}).then(()=>setTimeout(()=>{loadResults();loadIndices();startCd();},5000));}
+  },1000);
+}
+function stopCd(){clearInterval(cdTimer);}
+
+// ── Tab switch ──
+function switchTab(t){
+  activeTab=t;
+  el('tabCpr').className='tab'+(t==='cpr'?' act':'');
+  el('tabBrk').className='tab brk'+(t==='brk'?' act':'');
+  el('tabDbl').className='tab dbl'+(t==='dbl'?' act':'');
+  el('tabBof').className='tab bof'+(t==='bof'?' act':'');
+  el('twCpr').style.display   =t==='cpr'?'block':'none';
+  el('twBrk').style.display   =t==='brk'?'block':'none';
+  el('twDbl').style.display   =t==='dbl'?'block':'none';
+  el('twBof').style.display   =t==='bof'?'block':'none';
+  el('ctrlCpr').style.display =t==='cpr'?'flex':'none';
+  el('ctrlBrk').style.display =t==='brk'?'flex':'none';
+  el('ctrlDbl').style.display =t==='dbl'?'flex':'none';
+  el('ctrlBof').style.display =t==='bof'?'flex':'none';
+}
+
+// ── Double Bottom filter state ──
+let dFilt={dstatus:''};
+let dSort={col:'score',asc:false};
+
+function setDF(f,v,btn){
+  dFilt[f]=v;
+  btn.closest('.cg').querySelectorAll('.fb').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  renderDbl();
+}
+
+function srtD(col,e){
+  if(dSort.col===col) dSort.asc=!dSort.asc; else{dSort.col=col;dSort.asc=false;}
+  document.querySelectorAll('#tblDbl th').forEach(th=>th.removeAttribute('data-dir'));
+  e.currentTarget.setAttribute('data-dir',dSort.asc?'asc':'desc');
+  renderDbl();
+}
+
+function renderDbl(){
+  const q=(el('srchDbl').value||'').toUpperCase();
+  let rows=dblData.filter(r=>{
+    if(q && !r.symbol.includes(q)) return false;
+    if(dFilt.dstatus && r.status!==dFilt.dstatus) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let av=a[dSort.col]??0, bv=b[dSort.col]??0;
+    if(typeof av==='string') av=av.toLowerCase(), bv=(bv||'').toLowerCase();
+    return dSort.asc?(av>bv?1:-1):(av<bv?1:-1);
+  });
+  const tb=el('tbDbl');
+  if(!rows.length){
+    tb.innerHTML='<tr><td colspan="17"><div class="empty"><p>No double bottom patterns found yet.</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(r=>{
+    const chgCls=r.dayChg>=0?'pos':'neg';
+    const statusCls=r.status==='Breakout'?'dbl-breakout':'dbl-approach';
+    const neckCls=r.neckPct>=0?'pos':'neg';
+    return `<tr>
+      <td><strong>${r.symbol}</strong></td>
+      <td>${r.sector}</td>
+      <td><span class="${statusCls}">${r.status}</span></td>
+      <td><strong>${r.score}</strong></td>
+      <td>${r.cmp}</td>
+      <td class="${chgCls}">${r.dayChg>0?'+':''}${r.dayChg}%</td>
+      <td>${r.neckline}</td>
+      <td class="${neckCls}">${r.neckPct>0?'+':''}${r.neckPct}%</td>
+      <td>${r.trough1}</td>
+      <td>${r.trough2}</td>
+      <td>${r.depthPct}%</td>
+      <td>${r.gapWeeks}w</td>
+      <td>${r.target}</td>
+      <td>${r.sl}</td>
+      <td class="pos">+${r.upside}%</td>
+      <td>${r.volRatio}x</td>
+      <td>${r.rsiWeekly}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Breakout Finder filter state ──
+let boFilt={bofdir:''};
+let boSort={col:'cmp',asc:false};
+
+function setBOF(f,v,btn){
+  boFilt[f]=v;
+  btn.closest('.cg').querySelectorAll('.fb').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  renderBof();
+}
+
+function srtBO(col,e){
+  if(boSort.col===col) boSort.asc=!boSort.asc; else{boSort.col=col;boSort.asc=false;}
+  document.querySelectorAll('#tblBof th').forEach(th=>th.removeAttribute('data-dir'));
+  e.currentTarget.setAttribute('data-dir',boSort.asc?'asc':'desc');
+  renderBof();
+}
+
+function renderBof(){
+  const q=(el('srchBof').value||'').toUpperCase();
+  let rows=bofData.filter(r=>{
+    if(q && !r.symbol.includes(q)) return false;
+    if(boFilt.bofdir && r.direction!==boFilt.bofdir) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let av=a[boSort.col]??0, bv=b[boSort.col]??0;
+    if(typeof av==='string') av=av.toLowerCase(), bv=(bv||'').toLowerCase();
+    return boSort.asc?(av>bv?1:-1):(av<bv?1:-1);
+  });
+  const tb=el('tbBof');
+  if(!rows.length){
+    tb.innerHTML='<tr><td colspan="12"><div class="empty"><p>No breakout finder signals found yet.</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(r=>{
+    const chgCls=r.dayChg>=0?'pos':'neg';
+    const dirCls=r.direction==='Bullish Breakout'?'bof-bull':'bof-bear';
+    const upCls=r.direction==='Bullish Breakout'?'pos':'neg';
+    return `<tr>
+      <td><strong>${r.symbol}</strong></td>
+      <td>${r.sector}</td>
+      <td><span class="${dirCls}">${r.direction}</span></td>
+      <td>${r.cmp}</td>
+      <td class="${chgCls}">${r.dayChg>0?'+':''}${r.dayChg}%</td>
+      <td>${r.level}</td>
+      <td>${r.tests}</td>
+      <td>${r.baseAge}</td>
+      <td>${r.zoneWidth}</td>
+      <td>${r.target}</td>
+      <td>${r.sl}</td>
+      <td class="${upCls}">${r.upside>0?'+':''}${r.upside}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Stats ──
+function updateStats(){
+  el('stScanned').textContent=cprData.length;
+  el('stLong').textContent=cprData.filter(r=>r.signal==='long').length;
+  el('stShort').textContent=cprData.filter(r=>r.signal==='short').length;
+  el('stWatch').textContent=cprData.filter(r=>r.signal==='watch').length;
+  el('stUp').textContent=cprData.filter(r=>r.upside>=15).length;
+  el('stConf').textContent=cprData.filter(r=>r.confidence>=70).length;
+  el('stBull').textContent=brkData.filter(r=>r.direction==='bullish').length;
+  el('stBear').textContent=brkData.filter(r=>r.direction==='bearish').length;
+}
+
+// ── CPR Render ──
+function renderCpr(){
+  const srch=(el('srchCpr')||{}).value||'';
+  let d=[...cprData];
+  if(srch) d=d.filter(r=>r.symbol.toUpperCase().includes(srch.toUpperCase().trim()));
+  if(cFilt.cd!=='all') d=d.filter(r=>r.signal===cFilt.cd);
+  if(cFilt.cs!=='all') d=d.filter(r=>r.sector===cFilt.cs);
+  if(cFilt.cq==='u15') d=d.filter(r=>r.upside>=15);
+  if(cFilt.cq==='u20') d=d.filter(r=>r.upside>=20);
+  if(cFilt.cq==='c70') d=d.filter(r=>r.confidence>=70);
+  if(cFilt.cq==='best')d=d.filter(r=>r.confidence>=70&&r.upside>=15);
+  d=sortD(d,cSort);
+  const body=el('tbCpr');
+  if(!d.length&&!cprData.length){
+    body.innerHTML=`<tr><td colspan="21"><div class="empty"><p>Start <strong style="color:var(--acc)">python app.py</strong> then click <strong style="color:var(--acc)">▶ Start Scan</strong><br>Stocks appear progressively as they are scanned.</p></div></td></tr>`;
+    return;
+  }
+  if(!d.length){body.innerHTML=`<tr><td colspan="21"><div class="empty"><p>No stocks match current filters.</p></div></td></tr>`;return;}
+  body.innerHTML=d.map(r=>{
+    const sig=r.signal==='long'?`<span class="slong">▲ Long</span>`:r.signal==='short'?`<span class="sshort">▼ Short</span>`:`<span class="swatch">◆ Watch</span>`;
+    const dc=r.dayChg||0,dcc=dc>=0?'up':'dn';
+    const uc=r.upside>=0?'var(--grn)':'var(--red)';
+    const cf=r.confidence>=70?'ch':r.confidence>=50?'cm':'ccl';
+    const rsiC=r.rsi>=70?'var(--red)':r.rsi<=30?'var(--acc)':r.rsi>=50?'var(--grn)':'var(--txt2)';
+    const stEl=r.stBull?`<span class="ind-badge ind-bull">▲</span>`:`<span class="ind-badge ind-bear">▼</span>`;
+    const ck=[
+      {k:'narrowCPR',l:'NarwCPR'},{k:'volSurge',l:'Vol≥1.5×'},
+      {k:'atrCompressed',l:'ATRCmpr'},{k:'aboveEMA50',l:'EMA50'},
+      {k:'supertrendBull',l:'ST↑'},{k:'rsiOk',l:'RSI OK'},
+      {k:'macdBull',l:'MACD↑'},{k:'hhhl',l:'HH/HL'},
+    ].map(c=>`<span class="cond ${r.conditions?.[c.k]?'met':''}">${c.l}</span>`).join('');
+    return `<tr>
+      <td><span class="sym">${r.symbol}</span></td>
+      <td><span class="spill2">${r.sector}</span></td>
+      <td>${sig}</td>
+      <td style="font-weight:600">₹${fmt(r.cmp)}</td>
+      <td class="${dcc}" style="font-weight:500">${dc>=0?'+':''}${dc.toFixed(2)}%</td>
+      <td style="font-size:10px;color:var(--txt2)">O:${fmt(r.dayOpen)} H:${fmt(r.dayHigh)} L:${fmt(r.dayLow)}</td>
+      <td style="font-size:10px;color:var(--txt2)">P:${fmt(r.pivot)} T:${fmt(r.cprTop)} B:${fmt(r.cprBot)}</td>
+      <td style="color:var(--grn)">₹${fmt(r.target)}</td>
+      <td style="color:var(--red)">₹${fmt(r.sl)}</td>
+      <td style="color:${uc};font-weight:600">${r.upside>=0?'+':''}${r.upside?.toFixed(1)}%</td>
+      <td>${r.rr?.toFixed(2)}</td>
+      <td>${r.qty>0?r.qty:'—'}</td>
+      <td style="color:${r.volSurge>=2?'var(--grn)':r.volSurge>=1.5?'var(--amb)':'var(--txt3)'}">${r.volSurge?.toFixed(2)}×</td>
+      <td style="color:${rsiC}">${r.rsi?.toFixed(1)}</td>
+      <td style="color:${r.macdHist>0?'var(--grn)':'var(--red)'}">${r.macdHist>=0?'+':''}${r.macdHist?.toFixed(2)}</td>
+      <td style="color:${r.adx>=25?'var(--grn)':'var(--txt3)'}">${r.adx?.toFixed(1)}</td>
+      <td style="color:${r.pct52wk>=-5?'var(--grn)':'var(--txt3)'}">${r.pct52wk?.toFixed(1)}%</td>
+      <td style="color:${r.rsNifty>0?'var(--grn)':r.rsNifty<0?'var(--red)':'var(--txt3)'}">${r.rsNifty>=0?'+':''}${r.rsNifty?.toFixed(1)}</td>
+      <td>${stEl}</td>
+      <td><div class="conds">${ck}</div></td>
+      <td><div class="cbar"><div class="ctrk"><div class="cfil ${cf}" style="width:${r.confidence}%"></div></div><span style="font-size:11px">${r.confidence}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Breakout Render ──
+function renderBrk(){
+  const srch=(el('srchBrk')||{}).value||'';
+  let d=[...brkData];
+  if(srch) d=d.filter(r=>r.symbol.toUpperCase().includes(srch.toUpperCase().trim()));
+  if(bFilt.bd!=='all')  d=d.filter(r=>r.direction===bFilt.bd);
+  if(bFilt.bsec!=='all')d=d.filter(r=>r.sector===bFilt.bsec);
+  if(bFilt.bs==='s40')  d=d.filter(r=>r.score>=40);
+  if(bFilt.bs==='s60')  d=d.filter(r=>r.score>=60);
+  if(bFilt.bs==='s80')  d=d.filter(r=>r.score>=80);
+  if(bFilt.bt==='emaCross') d=d.filter(r=>r.conditions?.emaCrossBull||r.conditions?.emaCrossBear);
+  if(bFilt.bt==='bbBreak')  d=d.filter(r=>r.conditions?.bbBreakoutUp||r.conditions?.bbBreakoutDown);
+  if(bFilt.bt==='macdCross')d=d.filter(r=>r.conditions?.macdCrossBull||r.conditions?.macdCrossBear);
+  if(bFilt.bt==='stFlip')   d=d.filter(r=>r.conditions?.stFlipBull||r.conditions?.stFlipBear);
+  if(bFilt.bt==='52wk')     d=d.filter(r=>r.conditions?.near52wkHigh);
+  d=sortD(d,bSort);
+  const body=el('tbBrk');
+  if(!d.length&&!brkData.length){body.innerHTML=`<tr><td colspan="20"><div class="empty"><p>Run a scan to see breakout signals.</p></div></td></tr>`;return;}
+  if(!d.length){body.innerHTML=`<tr><td colspan="20"><div class="empty"><p>No breakouts match current filters.</p></div></td></tr>`;return;}
+  body.innerHTML=d.map(r=>{
+    const dirEl=r.direction==='bullish'?`<span class="sbull">🟢 Bullish</span>`:r.direction==='bearish'?`<span class="sbear">🔴 Bearish</span>`:`<span class="sneut">⚪ Neutral</span>`;
+    const dc=r.dayChg||0,dcc=dc>=0?'up':'dn';
+    const uc=r.upside>=0?'var(--grn)':'var(--red)';
+    const sc=r.score>=70?'cp':r.score>=40?'cm':'ccl';
+    const c=r.conditions||{};
+    const trigs=[
+      c.emaCrossBull&&{l:'EMA↑',b:true},c.emaCrossBear&&{l:'EMA↓',b:false},
+      c.bbBreakoutUp&&{l:'BB↑',b:true},c.bbBreakoutDown&&{l:'BB↓',b:false},
+      c.macdCrossBull&&{l:'MACD↑',b:true},c.macdCrossBear&&{l:'MACD↓',b:false},
+      c.stFlipBull&&{l:'ST↑',b:true},c.stFlipBear&&{l:'ST↓',b:false},
+      c.near52wkHigh&&{l:'52Wk',b:true},c.bbSqueeze&&{l:'Squeeze',b:null},
+      c.hhhl&&{l:'HH/HL',b:true},c.rsPositive&&{l:'RS+',b:true},
+    ].filter(Boolean).map(t=>`<span class="cond ${t.b===true?'met':t.b===false?'bear':''}">${t.l}</span>`).join('');
+    return `<tr>
+      <td><span class="sym">${r.symbol}</span></td>
+      <td><span class="spill2">${r.sector}</span></td>
+      <td>${dirEl}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="scrtrk"><div class="scrfil ${sc}" style="width:${r.score}%"></div></div><span style="font-size:11px;font-family:var(--mo)">${r.score}</span></div></td>
+      <td><div class="rec-text">${r.recommendation}</div></td>
+      <td style="font-weight:600">₹${fmt(r.cmp)}</td>
+      <td class="${dcc}" style="font-weight:500">${dc>=0?'+':''}${dc.toFixed(2)}%</td>
+      <td style="color:var(--grn)">₹${fmt(r.target)}</td>
+      <td style="color:var(--red)">₹${fmt(r.sl)}</td>
+      <td style="color:${uc};font-weight:600">${r.upside>=0?'+':''}${r.upside?.toFixed(1)}%</td>
+      <td>${r.rr?.toFixed(2)}</td>
+      <td>${r.qty>0?r.qty:'—'}</td>
+      <td style="color:${r.rsi>=70?'var(--red)':r.rsi>=50?'var(--grn)':'var(--txt2)'}">${r.rsi?.toFixed(1)}</td>
+      <td style="color:${r.macdHist>0?'var(--grn)':'var(--red)'}">${r.macdHist>=0?'+':''}${r.macdHist?.toFixed(2)}</td>
+      <td style="color:${r.adx>=25?'var(--grn)':'var(--txt3)'}">${r.adx?.toFixed(1)}</td>
+      <td style="color:${r.bbBW<5?'var(--amb)':'var(--txt3)'}">${r.bbBW?.toFixed(1)||'—'}%</td>
+      <td style="color:${r.volSurge>=1.5?'var(--grn)':'var(--txt3)'}">${r.volSurge?.toFixed(2)}×</td>
+      <td style="color:${r.pct52wk>=-5?'var(--grn)':'var(--txt3)'}">${r.pct52wk?.toFixed(1)||'—'}%</td>
+      <td style="color:${r.rsNifty>0?'var(--grn)':r.rsNifty<0?'var(--red)':'var(--txt3)'}">${r.rsNifty>=0?'+':''}${r.rsNifty?.toFixed(1)||'—'}</td>
+      <td><div class="conds">${trigs}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Sort ──
+function sortD(data,state){
+  return [...data].sort((a,b)=>{
+    let va=a[state.col],vb=b[state.col];
+    if(va==null)va=state.asc?Infinity:-Infinity;
+    if(vb==null)vb=state.asc?Infinity:-Infinity;
+    if(typeof va==='string')return state.asc?va.localeCompare(vb):vb.localeCompare(va);
+    return state.asc?va-vb:vb-va;
+  });
+}
+function srtC(col,e){
+  if(cSort.col===col)cSort.asc=!cSort.asc;else{cSort.col=col;cSort.asc=false;}
+  updHdr('tblCpr',col,cSort.asc); renderCpr();
+}
+function srtB(col,e){
+  if(bSort.col===col)bSort.asc=!bSort.asc;else{bSort.col=col;bSort.asc=false;}
+  updHdr('tblBrk',col,bSort.asc); renderBrk();
+}
+function updHdr(tId,col,asc){
+  document.querySelectorAll(`#${tId} thead th`).forEach(th=>{
+    th.classList.remove('sorted','asc');
+    if(th.dataset.col===col){th.classList.add('sorted');if(asc)th.classList.add('asc');}
+  });
+}
+
+// ── Filters ──
+function setCF(k,v,btn){
+  cFilt[k]=v;
+  document.querySelectorAll(`[data-f="${k}"]`).forEach(b=>b.classList.remove('act','aup','adn'));
+  btn.classList.add('act');
+  if(v==='long')btn.classList.add('aup');
+  if(v==='short')btn.classList.add('adn');
+  renderCpr();
+}
+function setBF(k,v,btn){
+  bFilt[k]=v;
+  document.querySelectorAll(`[data-f="${k}"]`).forEach(b=>b.classList.remove('act','aup','adn'));
+  btn.classList.add('act');
+  if(v==='bullish')btn.classList.add('aup');
+  if(v==='bearish')btn.classList.add('adn');
+  renderBrk();
+}
+</script>
+</body>
+</html>
